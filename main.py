@@ -39,4 +39,3 @@ ax1.axis('equal')
 
 # 그래프 출력
 st.pyplot(fig1)
-st.pyplot(fig1)
