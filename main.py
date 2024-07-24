@@ -1,38 +1,41 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-import koreanize-matplotlib
 
-# Load the CSV file
+# Load data
 file_path = '202406_202406_연령별인구현황_월간.csv'
 data = pd.read_csv(file_path, encoding='cp949')
 
-# Function to calculate the percentage of middle school age population
-def calculate_middle_school_percentage(region):
-    region_data = data[data['행정구역'].str.contains(region)]
-    total_population = region_data['2024년06월_계_총인구수'].str.replace(',', '').astype(int).sum()
-    middle_school_population = region_data[['2024년06월_계_12세', '2024년06월_계_13세', '2024년06월_계_14세']].replace(',', '', regex=True).astype(int).sum().sum()
-    
-    middle_school_percentage = (middle_school_population / total_population) * 100
-    return middle_school_population, total_population, middle_school_percentage
-
-# Streamlit app
+# Streamlit App
 st.title('지역별 중학생 인구 비율')
 
-region = st.text_input('지역을 입력하세요:', '서울특별시')
+# 지역 선택
+region = st.selectbox('지역을 선택하세요:', data['행정구역'].unique())
 
-if region:
-    middle_school_population, total_population, middle_school_percentage = calculate_middle_school_percentage(region)
-    
-    labels = ['중학생 인구', '기타 인구']
-    sizes = [middle_school_population, total_population - middle_school_population]
-    colors = ['#ff9999','#66b3ff']
-    
-    fig1, ax1 = plt.subplots()
-    ax1.pie(sizes, labels=labels, colors=colors, autopct='%1.1f%%', startangle=90)
-    ax1.axis('equal')
-    
-    st.pyplot(fig1)
-    st.write(f"{region}의 총 인구: {total_population}명")
-    st.write(f"{region}의 중학생 인구: {middle_school_population}명")
-    st.write(f"{region}의 중학생 인구 비율: {middle_school_percentage:.2f}%")
+# 선택한 지역의 데이터 필터링
+region_data = data[data['행정구역'] == region]
+
+# 중학생 인구 (13세 ~ 15세) 합계
+middle_school_population = region_data[['2024년06월_계_13세', '2024년06월_계_14세', '2024년06월_계_15세']].astype(int).sum(axis=1).values[0]
+
+# 전체 인구
+total_population = region_data['2024년06월_계_총인구수'].astype(int).values[0]
+
+# 비율 계산
+middle_school_ratio = middle_school_population / total_population * 100
+others_ratio = 100 - middle_school_ratio
+
+# 데이터 준비
+labels = ['중학생 인구 비율', '기타 인구 비율']
+sizes = [middle_school_ratio, others_ratio]
+colors = ['#ff9999','#66b3ff']
+explode = (0.1, 0)  # 중학생 인구 비율을 강조
+
+# 원 그래프 그리기
+fig1, ax1 = plt.subplots()
+ax1.pie(sizes, explode=explode, labels=labels, colors=colors, autopct='%1.1f%%',
+        shadow=True, startangle=90)
+ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+
+# 그래프 출력
+st.pyplot(fig1)
